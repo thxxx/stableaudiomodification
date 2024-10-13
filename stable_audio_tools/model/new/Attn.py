@@ -29,24 +29,24 @@ class Attention(nn.Module):
         natten_kernel_size = None
     ):
         super().__init__()
-        self.dim = dim
+        self.d_model = dim
         self.dim_heads = dim_heads
 
-        dim_kv = dim_context if dim_context is not None else dim
+        dim_kv = dim_context if dim_context is not None else self.d_model
         
-        self.num_heads = dim // dim_heads
+        self.num_heads = self.d_model // dim_heads
         self.kv_heads = dim_kv // dim_heads
 
-        if dim_context is not None:
-            self.to_q = nn.Linear(dim, dim, bias=False)
-            self.to_kv = nn.Linear(dim_kv, dim_kv * 2, bias=False)
-        else:
-            self.to_qkv = nn.Linear(dim, dim * 3, bias=False)
+        # if dim_context is not None:
+        self.to_q = nn.Linear(self.d_model, self.d_model, bias=False)
+        self.to_kv = nn.Linear(dim_kv, dim_kv*2, bias=False)
+        # else:
+        #     self.to_qkv = nn.Linear(dim, dim*3, bias=False)
 
-        self.to_out = nn.Linear(dim, dim, bias=False)
+        self.to_out = nn.Linear(self.d_model, self.d_model, bias=False)
 
         if zero_init_output:
-            nn.init.zeros_(self.to_out.weight)
+            nn.init.zeros_(self.to_out.weight) # 마지막 레이어만 0으로 초기화
 
         self.qk_norm = qk_norm
 
@@ -118,18 +118,12 @@ class Attention(nn.Module):
 
         kv_input = context if has_context else x
 
-        if hasattr(self, 'to_q'):
-            # Use separate linear projections for q and k/v
-            q = self.to_q(x)
-            q = rearrange(q, 'b n (h d) -> b h n d', h = h)
+        # Use separate linear projections for q and k/v
+        q = self.to_q(x)
+        q = rearrange(q, 'b n (h d) -> b h n d', h = h)
 
-            k, v = self.to_kv(kv_input).chunk(2, dim=-1)
-
-            k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = kv_h), (k, v))
-        else:
-            # Use fused linear projection
-            q, k, v = self.to_qkv(x).chunk(3, dim=-1)
-            q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), (q, k, v))
+        k, v = self.to_kv(kv_input).chunk(2, dim=-1)
+        k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = kv_h), (k, v))
         
         # Normalize q and k for cosine sim attention
         if self.qk_norm == "l2":
@@ -156,7 +150,6 @@ class Attention(nn.Module):
             k = k.to(k_dtype)
         
         input_mask = context_mask 
-
         if input_mask is None and not has_context:
             input_mask = mask
 
@@ -169,11 +162,8 @@ class Attention(nn.Module):
             masks.append(~input_mask)
 
         # Other masks will be added here later
-
         if len(masks) > 0:
             final_attn_mask = ~or_reduce(masks)
-
-        n, device = q.shape[-2], q.device
 
         if self.natten_kernel_size is not None:
             if natten is None:
@@ -208,7 +198,6 @@ class Attention(nn.Module):
 
         else:
             # Fall back to custom implementation
-
             if h != kv_h:
                 # Repeat interleave kv_heads to match q_heads
                 heads_per_kv_head = h // kv_h
@@ -235,12 +224,6 @@ class Attention(nn.Module):
         # merge heads
         out = rearrange(out, ' b h n d -> b n (h d)')
 
-        # Communicate between heads
-        
-        # with autocast(enabled = False):
-        #     out_dtype = out.dtype
-        #     out = out.to(torch.float32)
-        #     out = self.to_out(out).to(out_dtype)
         out = self.to_out(out)
 
         if mask is not None:

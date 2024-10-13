@@ -60,7 +60,7 @@ class NumberConditioner(Conditioner):
         Conditioner that takes a list of floats, normalizes them for a given range, and returns a list of embeddings
     '''
     def __init__(self, 
-                output_dim: int,
+                output_dim: int, # cond_dim=768
                 min_val: float=0,
                 max_val: float=1
                 ):

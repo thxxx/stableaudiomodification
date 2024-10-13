@@ -2,7 +2,6 @@ import torch
 from torch import nn, einsum
 from einops import rearrange
 from torch.cuda.amp import autocast
-
     
 class RotaryEmbedding(nn.Module):
     def __init__(

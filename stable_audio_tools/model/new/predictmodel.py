@@ -27,19 +27,19 @@ class ContinuousTransformer(nn.Module):
 
         super().__init__()
 
-        self.dim = dim
+        self.d_model = dim
         self.depth = depth
         self.layers = nn.ModuleList([])
 
-        self.project_in = nn.Linear(dim_in, dim, bias=False) if dim_in is not None else nn.Identity()
-        self.project_out = nn.Linear(dim, dim_out, bias=False) if dim_out is not None else nn.Identity()
+        self.project_in = nn.Linear(dim_in, self.d_model, bias=False) if dim_in is not None else nn.Identity()
+        self.project_out = nn.Linear(self.d_model, dim_out, bias=False) if dim_out is not None else nn.Identity()
 
         self.rotary_pos_emb = RotaryEmbedding(max(dim_heads // 2, 32)) if rotary_pos_emb is not None else None
 
         for i in range(depth):
             self.layers.append(
                 TransformerBlock(
-                    dim,
+                    self.d_model,
                     dim_heads = dim_heads,
                     cross_attend = cross_attend,
                     dim_context = cond_token_dim,
