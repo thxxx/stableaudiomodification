@@ -85,7 +85,7 @@ class DiffusionTransformer(nn.Module):
                 depth=depth,
                 dim_heads=embed_dim // num_heads,
                 cross_attend = cond_token_dim > 0,
-                cond_token_dim = cond_embed_dim,
+                cond_embed_dim = cond_embed_dim,
                 global_cond_dim=global_dim,
                 **kwargs
             )

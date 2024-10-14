@@ -14,14 +14,11 @@ class ContinuousTransformer(nn.Module):
         dim_out = None,
         dim_heads = 64,
         cross_attend=False,
-        cond_token_dim=None,
+        cond_embed_dim=None,
         global_cond_dim=None,
         rotary_pos_emb=True,
         zero_init_branch_outputs=True,
         conformer=False,
-        use_sinusoidal_emb=False, # 
-        use_abs_pos_emb=False, # 둘다 false야? 그렇네..
-        abs_pos_emb_max_length=10000,
         **kwargs
         ):
 
@@ -42,11 +39,9 @@ class ContinuousTransformer(nn.Module):
                     self.d_model,
                     dim_heads = dim_heads,
                     cross_attend = cross_attend,
-                    dim_context = cond_token_dim,
+                    dim_context = cond_embed_dim,
                     global_cond_dim = global_cond_dim,
                     zero_init_branch_outputs = zero_init_branch_outputs,
-                    conformer=conformer,
-                    layer_ix=i,
                     **kwargs
                 )
             )
@@ -58,6 +53,8 @@ class ContinuousTransformer(nn.Module):
         prepend_embeds = None,
         prepend_mask = None,
         global_cond = None,
+        context = None,
+        context_mask = None,
         **kwargs
     ):
         batch, seq, device = x.shape[0], x.shape[1], x.device
@@ -75,14 +72,11 @@ class ContinuousTransformer(nn.Module):
         # Attention layers 
         rotary_pos_emb = self.rotary_pos_emb.forward_from_seq_len(x.shape[1]) if self.rotary_pos_emb is not None else None
 
-        if self.use_sinusoidal_emb or self.use_abs_pos_emb:
-            x = x + self.pos_emb(x)
-
         # Iterate over the transformer layers
         for layer in self.layers:
             # global_cond는 현재 inference 세팅에서는 없다!
             # x = layer(x, rotary_pos_emb = rotary_pos_emb, global_cond=global_cond, **kwargs) # 을 해도 되는데, 아래가 효율적임.
-            x = checkpoint(layer, x, rotary_pos_emb=rotary_pos_emb, global_cond=global_cond, **kwargs)
+            x = checkpoint(layer, x, context=context, context_mask=context_mask, rotary_pos_emb=rotary_pos_emb, global_cond=global_cond)
 
         x = self.project_out(x)
 

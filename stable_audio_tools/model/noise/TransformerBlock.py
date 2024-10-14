@@ -18,7 +18,7 @@ class TransformerBlock(nn.Module):
             remove_norms = False,
             attn_kwargs = {},
             ff_kwargs = {},
-            norm_kwargs = {}
+            norm_kwargs = {} # 근데 3개 모두 들어오는 값 없다. 확작성을 위해 둔 것 뿐. kwargs를 넣은건 대부분 혹시 모를 상황때문이라고 생각하자
     ):
         super().__init__()
         self.dim = dim
