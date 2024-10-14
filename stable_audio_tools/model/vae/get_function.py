@@ -6,7 +6,6 @@ from .autoencoders import OobleckDecoder, OobleckEncoder, DACEncoderWrapper, DAC
 # AE factories
 def create_encoder_from_config(encoder_config: Dict[str, Any]):
     encoder_type = encoder_config.get("type", None)
-
     if encoder_type == "oobleck":
         encoder = OobleckEncoder(
             **encoder_config["config"]
@@ -46,7 +45,6 @@ def create_decoder_from_config(decoder_config: Dict[str, Any]):
 
 def create_autoencoder_from_config(config: Dict[str, Any]):
     ae_config = config
-    
     encoder = create_encoder_from_config(ae_config["encoder"])
     decoder = create_decoder_from_config(ae_config["decoder"])
 
