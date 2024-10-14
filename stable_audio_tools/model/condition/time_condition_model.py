@@ -1,9 +1,11 @@
 import torch.nn as nn
-from torch import Tensor, einsum
+from torch import Tensor
 import torch
 from einops import rearrange
 from typing import List, Union
 from math import pi
+import typing as tp
+from .Conditioners import Conditioner
 
 class LearnedPositionalEmbedding(nn.Module):
     """ Used for continuous time """
@@ -50,3 +52,36 @@ class NumberEmbedder(nn.Module):
         embedding = self.embedding(x)
         x = embedding.view(*shape, self.features) # 다시 원래 shape으로. 마지막 features는 뭔지 잘..
         return x  # type: ignore
+
+
+
+class NumberConditioner(Conditioner):
+    '''
+        Conditioner that takes a list of floats, normalizes them for a given range, and returns a list of embeddings
+    '''
+    def __init__(self, 
+                output_dim: int,
+                min_val: float=0,
+                max_val: float=1
+                ):
+        super().__init__(output_dim, output_dim)
+
+        self.min_val = min_val
+        self.max_val = max_val
+
+        self.embedder = NumberEmbedder(features=output_dim)
+
+    def forward(self, floats: tp.List[float], device=None) -> tp.Any:
+            # Cast the inputs to floats
+            floats = [float(x) for x in floats]
+            floats = torch.tensor(floats).to(device)
+            floats = floats.clamp(self.min_val, self.max_val)
+            normalized_floats = (floats - self.min_val) / (self.max_val - self.min_val)
+
+            # Cast floats to same type as embedder
+            embedder_dtype = next(self.embedder.parameters()).dtype
+            normalized_floats = normalized_floats.to(embedder_dtype)
+
+            float_embeds = self.embedder(normalized_floats).unsqueeze(1)
+    
+            return [float_embeds, torch.ones(float_embeds.shape[0], 1).to(device)]
