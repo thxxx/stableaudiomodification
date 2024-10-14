@@ -6,15 +6,12 @@ from .autoencoders import OobleckDecoder, OobleckEncoder, DACEncoderWrapper, DAC
 # AE factories
 def create_encoder_from_config(encoder_config: Dict[str, Any]):
     encoder_type = encoder_config.get("type", None)
-    assert encoder_type is not None, "Encoder type must be specified"
-
     if encoder_type == "oobleck":
         encoder = OobleckEncoder(
             **encoder_config["config"]
         )
     elif encoder_type == "dac":
         dac_config = encoder_config["config"]
-
         encoder = DACEncoderWrapper(**dac_config)
     else:
         raise ValueError(f"Unknown encoder type {encoder_type}")
@@ -28,7 +25,6 @@ def create_encoder_from_config(encoder_config: Dict[str, Any]):
 
 def create_decoder_from_config(decoder_config: Dict[str, Any]):
     decoder_type = decoder_config.get("type", None)
-    assert decoder_type is not None, "Decoder type must be specified"
 
     if decoder_type == "oobleck":
         decoder = OobleckDecoder(
@@ -36,7 +32,6 @@ def create_decoder_from_config(decoder_config: Dict[str, Any]):
         )
     elif decoder_type == "dac":
         dac_config = decoder_config["config"]
-
         decoder = DACDecoderWrapper(**dac_config)
     else:
         raise ValueError(f"Unknown decoder type {decoder_type}")
@@ -49,8 +44,7 @@ def create_decoder_from_config(decoder_config: Dict[str, Any]):
     return decoder
 
 def create_autoencoder_from_config(config: Dict[str, Any]):
-    ae_config = config["model"]
-
+    ae_config = config
     encoder = create_encoder_from_config(ae_config["encoder"])
     decoder = create_decoder_from_config(ae_config["decoder"])
 

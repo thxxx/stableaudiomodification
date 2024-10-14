@@ -140,21 +140,3 @@ class MultiConditioner(nn.Module):
                 conditioner_inputs.append(conditioner_input)
             output[key] = conditioner(conditioner_inputs, device)
         return output
-    
-def create_multi_conditioner_from_conditioning_config(cond_dim:int =768) -> MultiConditioner:
-    """
-    Create a MultiConditioner from a conditioning config dictionary
-
-    Args:
-        config: the conditioning config dictionary
-        device: the device to put the conditioners on
-    """
-    t5_config = {"output_dim": cond_dim, 't5_model_name': 't5-base', 'max_length': 128}
-    duration_config = {"output_dim": cond_dim, 'min_val': 0, 'max_val': 512}
-
-    conditioners = {}
-    conditioners['prompt'] = T5Conditioner(**t5_config)
-    conditioners['seconds_start'] = NumberConditioner(**duration_config)
-    conditioners['seconds_total'] = NumberConditioner(**duration_config)
-
-    return MultiConditioner(conditioners)
