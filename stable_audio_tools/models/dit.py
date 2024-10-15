@@ -206,11 +206,16 @@ class DiffusionTransformer(nn.Module):
         if self.patch_size > 1:
             x = rearrange(x, "b (t p) c -> b t (c p)", p=self.patch_size)
 
+        print("x : ", x.shape)
         if self.transformer_type == "x-transformers":
             output = self.transformer(x, prepend_embeds=prepend_inputs, context=cross_attn_cond, context_mask=cross_attn_cond_mask, mask=mask, prepend_mask=prepend_mask, **extra_args, **kwargs)
         elif self.transformer_type == "continuous_transformer":
+            print("transformer x : ", x.shape)
+            print("prepend_inputs : ", prepend_inputs.shape)
+            print("cross_attn_cond : ", cross_attn_cond.shape)
+            print("kwargs : ", kwargs)
             output = self.transformer(x, prepend_embeds=prepend_inputs, context=cross_attn_cond, context_mask=cross_attn_cond_mask, mask=mask, prepend_mask=prepend_mask, return_info=return_info, **extra_args, **kwargs)
-
+            print("transformer output : ", output.shape)
             if return_info:
                 output, info = output
         elif self.transformer_type == "mm_transformer":

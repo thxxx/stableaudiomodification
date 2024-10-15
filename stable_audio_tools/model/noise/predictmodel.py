@@ -78,6 +78,8 @@ class ContinuousTransformer(nn.Module):
             # x = layer(x, rotary_pos_emb = rotary_pos_emb, global_cond=global_cond, **kwargs) # 을 해도 되는데, 아래가 효율적임.
             x = checkpoint(layer, x, context=context, context_mask=context_mask, rotary_pos_emb=rotary_pos_emb, global_cond=global_cond)
 
+        print("아웃 전에 : ", x.shape)
         x = self.project_out(x)
+        print("아웃 에 : ", x.shape)
 
         return x

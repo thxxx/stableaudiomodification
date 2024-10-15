@@ -4,7 +4,6 @@ import torch
 from torch import nn
 import logging, warnings
 import typing as tp
-from .time_condition_model import NumberConditioner
 
 class Conditioner(nn.Module):
     def __init__(

@@ -655,6 +655,9 @@ class TransformerBlock(nn.Module):
         context_mask = None,
         rotary_pos_emb = None
     ):
+        print("self.global_cond_dim : ", self.global_cond_dim)
+        print("self.global_cond_dim : ", self.global_cond_dim)
+        print("global_cond : ", global_cond)
         if self.global_cond_dim is not None and self.global_cond_dim > 0 and global_cond is not None:
             
             scale_self, shift_self, gate_self, scale_ff, shift_ff, gate_ff = self.to_scale_shift_gate(global_cond).unsqueeze(1).chunk(6, dim = -1)

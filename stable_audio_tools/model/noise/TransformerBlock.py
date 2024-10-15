@@ -47,13 +47,13 @@ class TransformerBlock(nn.Module):
         self.ff_norm = LayerNorm(dim, **norm_kwargs) if not remove_norms else nn.Identity()
         self.ff = FeedForward(dim, zero_init_output=zero_init_branch_outputs, **ff_kwargs)
 
-        # self.global_cond_dim = global_cond_dim
-        # if global_cond_dim is not None:
-        #     self.to_scale_shift_gate = nn.Sequential(
-        #         nn.SiLU(),
-        #         nn.Linear(global_cond_dim, dim * 6, bias=False)
-        #     )
-        #     nn.init.zeros_(self.to_scale_shift_gate[1].weight)
+        self.global_cond_dim = global_cond_dim
+        if global_cond_dim is not None:
+            self.to_scale_shift_gate = nn.Sequential(
+                nn.SiLU(),
+                nn.Linear(global_cond_dim, dim * 6, bias=False)
+            )
+            nn.init.zeros_(self.to_scale_shift_gate[1].weight)
 
     def forward(
         self,
@@ -65,29 +65,32 @@ class TransformerBlock(nn.Module):
         rotary_pos_emb = None
     ):
         # below is utilize global_cond with adaLN
+        print("self.global_cond_dim : ", self.global_cond_dim)
+        print("self.global_cond_dim : ", self.global_cond_dim)
+        print("global_cond : ", global_cond)
         if self.global_cond_dim is not None and self.global_cond_dim > 0 and global_cond is not None:
-            # scale_self, shift_self, gate_self, scale_ff, shift_ff, gate_ff = self.to_scale_shift_gate(global_cond).unsqueeze(1).chunk(6, dim = -1)
+            print("\n\nso, in\n\n")
+            scale_self, shift_self, gate_self, scale_ff, shift_ff, gate_ff = self.to_scale_shift_gate(global_cond).unsqueeze(1).chunk(6, dim = -1)
 
-            # # self-attention with adaLN
-            # residual = x
-            # x = self.pre_norm(x)
-            # x = x * (1 + scale_self) + shift_self
-            # x = self.self_attn(x, mask = mask, rotary_pos_emb = rotary_pos_emb)
-            # x = x * torch.sigmoid(1 - gate_self)
-            # x = x + residual
+            # self-attention with adaLN
+            residual = x
+            x = self.pre_norm(x)
+            x = x * (1 + scale_self) + shift_self
+            x = self.self_attn(x, mask = mask, rotary_pos_emb = rotary_pos_emb)
+            x = x * torch.sigmoid(1 - gate_self)
+            x = x + residual
 
-            # # cross-attention
-            # if context is not None:
-            #     x = x + self.cross_attn(self.cross_attend_norm(x), context = context, context_mask = context_mask)
+            # cross-attention
+            if context is not None:
+                x = x + self.cross_attn(self.cross_attend_norm(x), context = context, context_mask = context_mask)
 
-            # # feedforward with adaLN
-            # residual = x
-            # x = self.ff_norm(x)
-            # x = x * (1 + scale_ff) + shift_ff
-            # x = self.ff(x)
-            # x = x * torch.sigmoid(1 - gate_ff)
-            # x = x + residual
-            pass
+            # feedforward with adaLN
+            residual = x
+            x = self.ff_norm(x)
+            x = x * (1 + scale_ff) + shift_ff
+            x = self.ff(x)
+            x = x * torch.sigmoid(1 - gate_ff)
+            x = x + residual
 
         else:
             x = x + self.self_attn(self.pre_norm(x), mask = mask, rotary_pos_emb = rotary_pos_emb)
