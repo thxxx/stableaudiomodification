@@ -120,6 +120,8 @@ def sample_k(
         rho=1.0, device="cuda", 
         callback=None, 
         cond_fn=None,
+        original_audio=None,
+        original_weight=0.8,
         **extra_args
     ):
 
@@ -173,9 +175,19 @@ def sample_k(
         # set the initial latent to noise
         x = noise
 
+    # original audio랑 interpolation 하기
+    print("x : ", x.shape)
+    print("sigmas : ", sigmas.shape)
+    print("original_audio : ", original_audio.shape)
+
+    ol = original_audio.shape[-1]
+    x[:, :, ol] = x[:, :, :ol] * (1 - original_weight) + original_audio * original_weight
+    # sigmas = 
 
     with torch.cuda.amp.autocast():
         if sampler_type == "dpmpp-3m-sde":
+            print(x.shape)
+            print(sigmas)
             return K.sampling.sample_dpmpp_3m_sde(denoiser, x, sigmas, disable=False, callback=wrapped_callback, extra_args=extra_args)
 
 # Uses discrete Euler sampling for rectified flow models
